@@ -7,9 +7,9 @@
 *.vbw
 
 # --- Éles, személyes mentési állapot (adat, nem forráskód) ---
-Kezdet.mb3
-Kezdet_0.mb3
-Kezdet_1.mb3
+# A vezető "/" miatt csak a gyökérkönyvtárra vonatkozik, az Adatok/
+# mappában lévő azonos nevű preset-fájlokat nem érinti.
+/Kezdet.mb3
 
 # --- Rendszerfájlok ---
 Thumbs.db
