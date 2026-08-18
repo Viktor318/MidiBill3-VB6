@@ -22,14 +22,21 @@ Begin VB.Form Form1
    ForeColor       =   &H80000008&
    Icon            =   "MidiBill.frx":0000
    LinkTopic       =   "Form1"
-   LockControls    =   -1  'True
    MaxButton       =   0   'False
    PaletteMode     =   1  'Z-rendezés használata
    ScaleHeight     =   6744
    ScaleWidth      =   9288
+   Begin VB.CommandButton Frissit 
+      Caption         =   "MIDI eszközök frissítése"
+      Height          =   612
+      Left            =   6240
+      TabIndex        =   47
+      Top             =   4320
+      Width           =   2772
+   End
    Begin MidifileLib.MIDIFile MIDIFile1 
-      Left            =   8400
-      Top             =   5760
+      Left            =   8640
+      Top             =   5880
       _Version        =   65538
       _ExtentX        =   677
       _ExtentY        =   677
@@ -598,9 +605,9 @@ Begin VB.Form Form1
          Strikethrough   =   0   'False
       EndProperty
       Height          =   615
-      Left            =   6960
+      Left            =   6240
       TabIndex        =   7
-      Top             =   4320
+      Top             =   5160
       Width           =   1215
    End
    Begin VB.Frame Frame5 
@@ -649,7 +656,7 @@ Begin VB.Form Form1
          Strikethrough   =   0   'False
       EndProperty
       Height          =   615
-      Left            =   6960
+      Left            =   7800
       TabIndex        =   5
       Top             =   5160
       Width           =   1215
@@ -923,6 +930,7 @@ Option Explicit
     Dim NoteOn(1 To 4, 0 To 127) As Boolean  'Nyilvántartás: melyik hang szól éppen az egyes csatornákon
     Dim HeldNotes(0 To 127) As Integer  'Melyik fizikai billentyû van lenyomva (0=nincs, egyébként a velocity), a csatorna be/ki állapotától FÜGGETLENÜL
     Dim MidiOutHibaJelezve As Boolean  'Hogy a kimeneti hiba csak egyszer villantson üzenetet, ne minden billentyûnél
+    Dim frissitesFolyamatban As Boolean  'Eszközlista-frissítés alatt elnyomja az egyezés-ellenõrzés figyelmeztetését
     'Def. vége
     
 
@@ -937,23 +945,24 @@ Private Sub Form_Load()
     Form1.Show
     
     If (MIDIInput1.DeviceCount = 0) Then
-     MsgBox ("MIDI bemenet nem található! A program most kilép.")
-     Unload Me
-     Exit Sub
+     MsgBox "Nem található MIDI bemeneti eszköz. A program elindul, de MIDI bemenet nélkül." & vbCrLf & _
+            "Csatlakoztass egy eszközt, majd nyomd meg az 'Eszközök frissítése' gombot.", vbInformation, "MidiBill"
     End If
     
     '
     ' Fill input device combo box
     '
-    For i = 0 To MIDIInput1.DeviceCount - 1
-     MIDIInput1.DeviceID = i
-     MIDI_In.AddItem MIDIInput1.ProductName
-    Next
-    '
-    ' Select first in list
-    '
-    MIDI_In.ListIndex = 0
-    MIDIInput1.DeviceID = 0
+    If MIDIInput1.DeviceCount > 0 Then
+     For i = 0 To MIDIInput1.DeviceCount - 1
+      MIDIInput1.DeviceID = i
+      MIDI_In.AddItem MIDIInput1.ProductName
+     Next
+     '
+     ' Select first in list
+     '
+     MIDI_In.ListIndex = 0
+     MIDIInput1.DeviceID = 0
+    End If
     
     '
     ' Fill output device combo box
@@ -1089,32 +1098,32 @@ Private Sub Kilép_Click()
  Unload Me
 End Sub
 
-Private Sub Hangszerek1_Click(Index As Integer)
-  Call Prog_Change(Index + 1, Hangszerek1(Index).ListIndex)
+Private Sub Hangszerek1_Click(index As Integer)
+  Call Prog_Change(index + 1, Hangszerek1(index).ListIndex)
 End Sub
 
-Private Sub Volume1_Change(Index As Integer)
-  Call Her_Change(Index + 1, Volume1(Index).Value)
+Private Sub Volume1_Change(index As Integer)
+  Call Her_Change(index + 1, Volume1(index).Value)
 End Sub
 
-Private Sub Volume1_Scroll(Index As Integer)
-  Call Her_Change(Index + 1, Volume1(Index).Value)
+Private Sub Volume1_Scroll(index As Integer)
+  Call Her_Change(index + 1, Volume1(index).Value)
 End Sub
 
-Private Sub Tér1_Change(Index As Integer)
-  Call Tér_Change(Index + 1, Tér1(Index).Value)
+Private Sub Tér1_Change(index As Integer)
+  Call Tér_Change(index + 1, Tér1(index).Value)
 End Sub
 
-Private Sub Tér1_Scroll(Index As Integer)
-  Call Tér_Change(Index + 1, Tér1(Index).Value)
+Private Sub Tér1_Scroll(index As Integer)
+  Call Tér_Change(index + 1, Tér1(index).Value)
 End Sub
 
-Private Sub Vibrato1_Change(Index As Integer)
-  Call Vibrato_Change(Index + 1, Vibrato1(Index).Value)
+Private Sub Vibrato1_Change(index As Integer)
+  Call Vibrato_Change(index + 1, Vibrato1(index).Value)
 End Sub
 
-Private Sub Vibrato1_Scroll(Index As Integer)
-  Call Vibrato_Change(Index + 1, Vibrato1(Index).Value)
+Private Sub Vibrato1_Scroll(index As Integer)
+  Call Vibrato_Change(index + 1, Vibrato1(index).Value)
 End Sub
 
 Private Sub Volume_Init()
@@ -1149,16 +1158,16 @@ Private Sub Volume_Refresh()
     Next c
 End Sub
 
-Private Sub J1_Click(Index As Integer)
+Private Sub J1_Click(index As Integer)
  Dim i As Integer
 
- If J1(Index).Value Then
-   Keret1(Index).Caption = Keret1(Index).Caption + ": Aktív"
-   Call Sound_Held_Notes(Index + 1) 'A jelenleg lenyomott hangok megszólaltatása az újonnan aktivált csatornán
+ If J1(index).Value Then
+   Keret1(index).Caption = Keret1(index).Caption + ": Aktív"
+   Call Sound_Held_Notes(index + 1) 'A jelenleg lenyomott hangok megszólaltatása az újonnan aktivált csatornán
  Else
-   i = Len(Keret1(Index).Caption)
-   Keret1(Index).Caption = Left(Keret1(Index).Caption, i - 7)
-   Call Turn_Notes_Off(Index + 1) 'Hangok kikapcsolása a megfelelõ MIDI csatornán
+   i = Len(Keret1(index).Caption)
+   Keret1(index).Caption = Left(Keret1(index).Caption, i - 7)
+   Call Turn_Notes_Off(index + 1) 'Hangok kikapcsolása a megfelelõ MIDI csatornán
  End If
 
 End Sub
@@ -1166,6 +1175,18 @@ End Sub
 Private Sub MIDI_In_Click()
     
     If MIDI_In.ListIndex < 0 Then Exit Sub 'Nincs kiválasztott bemeneti eszköz
+    
+    If Not frissitesFolyamatban Then
+        If Not BemenetEgyezikE(MIDI_In.ListIndex) Then
+            ' A ComboBox-ban látott eszköznév és a Windows aktuális eszközlistája
+            ' már nem egyezik (pl. eszköz ki-/behúzása miatt eltolódott az index) -
+            ' ahelyett hogy csendben egy MÁSIK eszközt nyitnánk meg, inkább
+            ' frissítünk és onnan folytatjuk.
+            MsgBox "A MIDI eszközlista idõközben megváltozott - frissítem.", vbInformation, "MidiBill"
+            Call Frissit_Click
+            Exit Sub
+        End If
+    End If
     
     On Error GoTo MidiInHiba
     
@@ -1196,6 +1217,14 @@ Private Sub MIDI_Out_Click()
 
     If MIDI_Out.ListIndex < 0 Then Exit Sub 'Nincs kiválasztott kimeneti eszköz
 
+    If Not frissitesFolyamatban Then
+        If Not KimenetEgyezikE(MIDI_Out.ListIndex) Then
+            MsgBox "A MIDI eszközlista idõközben megváltozott - frissítem.", vbInformation, "MidiBill"
+            Call Frissit_Click
+            Exit Sub
+        End If
+    End If
+
     On Error GoTo MidiOutHiba
 
     If MIDIOutput1.State >= MIDISTATE_OPEN Or MIDIOutput1.DeviceID = -1 Then
@@ -1217,6 +1246,107 @@ MidiOutHiba:
     MsgBox "Nem sikerült megnyitni a kiválasztott MIDI kimeneti eszközt." & vbCrLf & _
            "Lehet, hogy idõközben eltávolították, vagy más program használja." & vbCrLf & vbCrLf & _
            "Hiba: " & Err.Description, vbExclamation, "MidiBill"
+End Sub
+
+Private Function BemenetEgyezikE(index As Integer) As Boolean
+    ' Megvizsgálja, hogy a MIDI_In ComboBox adott pozícióján látott eszköznév
+    ' még mindig egyezik-e azzal, amit a Windows JELENLEG ezen a pozíción
+    ' jelent (nem a program indulásakor vagy a legutóbbi frissítéskor).
+    Dim aktualisNev As String
+    If index < 0 Or index >= MIDIInput1.DeviceCount Then
+        BemenetEgyezikE = False
+        Exit Function
+    End If
+    MIDIInput1.DeviceID = index
+    aktualisNev = MIDIInput1.ProductName
+    BemenetEgyezikE = (aktualisNev = MIDI_In.List(index))
+End Function
+
+Private Function KimenetEgyezikE(index As Integer) As Boolean
+    ' Ugyanaz, mint a BemenetEgyezikE, csak a MIDI_Out esetére - itt a
+    ' ComboBox 0. pozíciója a -1-es eszközazonosítónak (MIDI Mapper) felel meg.
+    Dim aktualisNev As String
+    Dim devId As Integer
+    devId = index - 1
+    If devId < -1 Or devId >= MIDIOutput1.DeviceCount Then
+        KimenetEgyezikE = False
+        Exit Function
+    End If
+    MIDIOutput1.DeviceID = devId
+    aktualisNev = MIDIOutput1.ProductName
+    KimenetEgyezikE = (aktualisNev = MIDI_Out.List(index))
+End Function
+
+Private Sub Frissit_Click()
+    ' Újra lekérdezi a Windows-tól az elérhetõ MIDI be- és kimeneti
+    ' eszközöket, és - ha még elérhetõ - megtartja a jelenlegi kiválasztást
+    ' (NÉV alapján, nem index alapján, mert az index eltolódhatott).
+    Dim regiBemenetNev As String
+    Dim regiKimenetNev As String
+    Dim i As Integer
+    Dim ujIndex As Integer
+
+    frissitesFolyamatban = True
+
+    If MIDI_In.ListIndex >= 0 Then regiBemenetNev = MIDI_In.List(MIDI_In.ListIndex)
+    If MIDI_Out.ListIndex >= 0 Then regiKimenetNev = MIDI_Out.List(MIDI_Out.ListIndex)
+
+    MIDI_In.Clear
+    For i = 0 To MIDIInput1.DeviceCount - 1
+        MIDIInput1.DeviceID = i
+        MIDI_In.AddItem MIDIInput1.ProductName
+    Next
+
+    MIDI_Out.Clear
+    For i = -1 To MIDIOutput1.DeviceCount - 1
+        MIDIOutput1.DeviceID = i
+        MIDI_Out.AddItem MIDIOutput1.ProductName
+    Next
+
+    ' Korábbi bemeneti kiválasztás visszakeresése NÉV alapján
+    ujIndex = -1
+    If Len(regiBemenetNev) > 0 Then
+        For i = 0 To MIDI_In.ListCount - 1
+            If MIDI_In.List(i) = regiBemenetNev Then
+                ujIndex = i
+                Exit For
+            End If
+        Next
+    End If
+    If ujIndex >= 0 Then
+        If ujIndex <> MIDI_In.ListIndex Then MIDI_In.ListIndex = ujIndex
+    ElseIf MIDI_In.ListCount > 0 Then
+        MIDI_In.ListIndex = 0
+    Else
+        MsgBox "Nincs elérhetõ MIDI bemeneti eszköz.", vbInformation, "MidiBill"
+    End If
+
+    ' Korábbi kimeneti kiválasztás visszakeresése NÉV alapján
+    ujIndex = -1
+    If Len(regiKimenetNev) > 0 Then
+        For i = 0 To MIDI_Out.ListCount - 1
+            If MIDI_Out.List(i) = regiKimenetNev Then
+                ujIndex = i
+                Exit For
+            End If
+        Next
+    End If
+    If ujIndex >= 0 Then
+        If ujIndex <> MIDI_Out.ListIndex Then MIDI_Out.ListIndex = ujIndex
+    ElseIf MIDI_Out.ListCount > 0 Then
+        MIDI_Out.ListIndex = 0
+    Else
+        MsgBox "Nincs elérhetõ MIDI kimeneti eszköz.", vbExclamation, "MidiBill"
+    End If
+
+    frissitesFolyamatban = False
+
+    ' Explicit megnyitás/megerõsítés a végén, függetlenül attól, hogy a fenti
+    ' ListIndex-beállítások kiváltottak-e már automatikusan Click eseményt
+    ' (ha a kiválasztás nem változott, nem váltottak volna ki).
+    If MIDI_In.ListIndex >= 0 Then Call MIDI_In_Click
+    If MIDI_Out.ListIndex >= 0 Then Call MIDI_Out_Click
+
 End Sub
 
 Private Sub MIDI_Reset_Click()
@@ -1409,8 +1539,12 @@ Private Sub Load_File(FileName As String)
     Close 1 'Régi típusú mentett adatokkal való kompatibilitás miatt
   Else
     Input #1, Adat(1), Adat(2)
-    MIDI_In.ListIndex = Adat(1)
-    MIDI_Out.ListIndex = Adat(2)
+    'Csak akkor állítjuk be, ha a mentett index még érvényes a JELENLEGI
+    ' eszközlistában - ha kevesebb/más eszköz van most, mint mentéskor
+    ' (pl. nincs semmi csatlakoztatva), ez véd az üres/túl rövid listára
+    ' történõ érvénytelen ListIndex-beállítás okozta futásidejû hiba ellen.
+    If Adat(1) >= 0 And Adat(1) < MIDI_In.ListCount Then MIDI_In.ListIndex = Adat(1)
+    If Adat(2) >= 0 And Adat(2) < MIDI_Out.ListCount Then MIDI_Out.ListIndex = Adat(2)
     Close 1
   End If
 
